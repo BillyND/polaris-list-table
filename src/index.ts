@@ -24,3 +24,16 @@ export type { UseSelectionReturn, SelectionChangeHandler } from './hooks/useSele
 
 export { usePagination } from './hooks/usePagination';
 export type { UsePaginationOptions, UsePaginationReturn } from './hooks/usePagination';
+
+// Models
+export { ViewModel } from './models/View';
+export type { IView } from './models/View';
+
+// Server utilities (SERVER-SIDE ONLY - do not use in client-side code)
+export {
+  serverGetViews,
+  serverCreateView,
+  serverUpdateView,
+  serverDeleteView,
+  serverRenameView,
+} from './server/views';
