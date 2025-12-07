@@ -32,7 +32,7 @@ export function ListTableFilters(
 
   // Support both fetchFn and fetchFunction (fetchFn takes precedence)
   const effectiveFetchFunction = fetchFn || fetchFunction || defaultFetch;
-
+  console.log('effectiveFetchFunction', effectiveFetchFunction);
   const { selected } = state;
 
   // Declare all the function handlers first
