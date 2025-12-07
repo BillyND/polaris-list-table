@@ -18,6 +18,16 @@
  * const views = await ViewModel.find({ path: '/admin/users' });
  * ```
  *
+ * For custom models, use the factory function:
+ * ```typescript
+ * import { createViewModel } from 'polaris-list-table/models/createViewModel';
+ *
+ * const CustomViewModel = createViewModel({
+ *   modelName: 'CustomView',
+ *   schemaOptions: { customField: { type: String } }
+ * });
+ * ```
+ *
  * Schema Fields:
  * - path: The URL path where the view is used (e.g., '/admin/users')
  * - name: The name of the saved view
@@ -117,3 +127,11 @@ const getMongooseModels = () => {
 const mongooseModels = getMongooseModels();
 // Fallback to creating new model if models registry is not available
 export const ViewModel = mongooseModels?.View || model<IView>('View', ViewSchema);
+
+// Re-export factory function and utilities for customization
+export {
+  createViewModel,
+  baseViewSchemaDefinition,
+  createBaseViewIndexes,
+} from './createViewModel';
+export type { CreateViewModelOptions } from './createViewModel';

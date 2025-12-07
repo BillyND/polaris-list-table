@@ -1,6 +1,4 @@
-// Main entry point - Client-side exports only
-// ⚠️ For server-side code, use subpath exports: 'polaris-list-table/server' or 'polaris-list-table/models/View'
-
+// Client-side exports only - no mongoose dependencies
 export { default as ListTable } from './components/ListTable';
 export type {
   ListTableProps,
@@ -27,3 +25,4 @@ export type { UseSelectionReturn, SelectionChangeHandler } from './hooks/useSele
 
 export { usePagination } from './hooks/usePagination';
 export type { UsePaginationOptions, UsePaginationReturn } from './hooks/usePagination';
+
