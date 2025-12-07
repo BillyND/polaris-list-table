@@ -48,7 +48,7 @@ export function ListTableContent(props: ListTableProps) {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: '90px',
+        paddingBlock: '90px',
       }}
     >
       <div
