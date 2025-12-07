@@ -1,5 +1,5 @@
 import type { ComponentClass, FunctionComponent } from 'react';
-import React, { useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useSetIndexFiltersMode } from '@shopify/polaris';
 import { TABLE_ITEM_LIST_LIMITATION } from '../constants';
 import { defaultFetch } from '../utils/defaultFetch';
@@ -109,7 +109,7 @@ export default function withDataSource(
       setPage,
       setSort: setSortFromHook,
       setFilters: setFiltersFromHook,
-      setSelectedView,
+      setViewSelected: setViewSelectedFromHook,
       refresh: refreshDataSource,
     } = useDataSource({
       endpoint: endpoint || '',
@@ -130,12 +130,9 @@ export default function withDataSource(
       debounceMs: 100,
     });
 
-    // Create wrapper for setViewSelected that accepts string | null
-    const setViewSelected = useCallback((viewNameOrId: string | null) => {
-      // This is a simplified implementation - in practice, you'd need to find the index
-      // For now, we'll just update the state directly if needed
-      // The actual view selection logic should be handled by the component using this HOC
-    }, []);
+    // Use setViewSelected from useDataSource hook
+    // It will update state, and updateSearchParamsFromState will sync to URL automatically
+    const setViewSelected = setViewSelectedFromHook;
 
     // Map filterValues from state
     const filterValues = state.filterValues;

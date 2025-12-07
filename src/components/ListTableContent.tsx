@@ -1,4 +1,4 @@
-import React from 'react';
+import { Fragment } from 'react';
 import { BlockStack, Divider, IndexTable } from '@shopify/polaris';
 import type { ListTableProps } from '../types';
 import { TABLE_ITEM_LIST_LIMITATION } from '../constants';
@@ -73,12 +73,12 @@ export function ListTableContent(props: ListTableProps) {
         }
       >
         {items.map((item: any, index: number) => (
-          <React.Fragment key={item.uuid || item._id || item.id || index}>
+          <Fragment key={item.uuid || item._id || item.id || index}>
             {renderRowMarkup(item, index, selectedResources, {
               getSelectedResources,
               clearAllSelection,
             })}
-          </React.Fragment>
+          </Fragment>
         ))}
       </IndexTable>
 

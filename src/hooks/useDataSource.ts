@@ -69,6 +69,7 @@ export interface UseDataSourceReturn<T> {
   clearFilters: () => void;
   setSort: (sort: SortDefinition | null) => void;
   setSelectedView: (index: number) => void;
+  setViewSelected: (viewNameOrId: string | null) => void;
   refresh: () => void;
 
   // Polaris helpers
@@ -541,6 +542,10 @@ export function useDataSource<T = any>({
     [defaultViews, handleSetFilterValues]
   );
 
+  const setViewSelected = useCallback((viewNameOrId: string | null) => {
+    setViewSelectedState(viewNameOrId);
+  }, []);
+
   const refresh = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);
   }, []);
@@ -592,6 +597,7 @@ export function useDataSource<T = any>({
     clearFilters,
     setSort,
     setSelectedView,
+    setViewSelected,
     refresh,
     tabs,
     sortOptions: [],

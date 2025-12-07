@@ -1,6 +1,6 @@
-import React from 'react';
 import { IndexFilters } from '@shopify/polaris';
 import type { IndexFiltersProps, TabProps } from '@shopify/polaris';
+import type { Dispatch, SetStateAction } from 'react';
 import type { ListTableFilter, ListTableProps, ListTableState, ListTableView } from '../types';
 import { VIEW_ACTIONS } from '../types';
 import { defaultFetch } from '../utils/defaultFetch';
@@ -10,7 +10,7 @@ import lodash from 'lodash';
 export function ListTableFilters(
   props: ListTableProps,
   state: ListTableState,
-  setState: React.Dispatch<React.SetStateAction<ListTableState>>
+  setState: Dispatch<SetStateAction<ListTableState>>
 ) {
   const {
     t = defaultT,
