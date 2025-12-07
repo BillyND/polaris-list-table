@@ -1,7 +1,7 @@
 {
-  "name": "polaris-query",
+  "name": "polaris-list-table",
   "version": "1.0.0",
-  "description": "A client-side query library for Shopify Polaris that integrates with mongoose-url-query",
+  "description": "A complete data table component for Shopify Polaris with filtering, sorting, pagination and URL sync. Integrates with mongoose-url-query.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -23,8 +23,13 @@
   "keywords": [
     "polaris",
     "shopify",
-    "query",
-    "mongoose",
+    "list-table",
+    "data-table",
+    "index-table",
+    "filtering",
+    "sorting",
+    "pagination",
+    "mongoose-url-query",
     "react",
     "hooks"
   ],

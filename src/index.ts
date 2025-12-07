@@ -1,12 +1,12 @@
 /**
- * @file Polaris Query
+ * @file Polaris List Table
  *
- * A client-side query library for Shopify Polaris that integrates with mongoose-url-query.
- * Provides components, hooks, and utilities for building filtered, sorted, paginated data tables.
+ * A complete data table component for Shopify Polaris with filtering, sorting, pagination and URL sync.
+ * Integrates with mongoose-url-query for seamless backend compatibility.
  *
  * @example Using ListTable Component (Recommended)
  * ```tsx
- * import { ListTable } from "polaris-query";
+ * import { ListTable } from "polaris-list-table";
  * import { IndexTable } from "@shopify/polaris";
  *
  * function ProductList() {
@@ -37,7 +37,7 @@
  *
  * @example Using Hooks for Custom Implementation
  * ```tsx
- * import { useDataSource, useSelection, usePagination } from "polaris-query";
+ * import { useDataSource, useSelection, usePagination } from "polaris-list-table";
  *
  * function CustomProductList() {
  *   const {
@@ -68,7 +68,7 @@
  *
  * @example Building URLs Manually
  * ```ts
- * import { buildUrl } from "polaris-query";
+ * import { buildUrl } from "polaris-list-table";
  *
  * const url = buildUrl({
  *   baseUrl: "/api/products",
