@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { BlockStack, Divider, IndexTable } from '@shopify/polaris';
 import type { ListTableProps } from '../types';
-import { TABLE_ITEM_LIST_LIMITATION } from '../constants';
+import { TABLE_ITEM_LIST_LIMITATION } from '../index.constants';
 import { usePagination } from '../hooks/usePagination';
 
 export function ListTableContent(props: ListTableProps) {

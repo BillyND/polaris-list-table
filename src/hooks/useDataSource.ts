@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useSetIndexFiltersMode } from '@shopify/polaris';
-import { TABLE_ITEM_LIST_LIMITATION } from '../constants';
+import { TABLE_ITEM_LIST_LIMITATION } from '../index.constants';
 import { defaultFetch } from '../utils/defaultFetch';
 import { buildQueryUrl } from 'mongoose-url-query';
 import lodash from 'lodash';

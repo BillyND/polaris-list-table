@@ -5,13 +5,13 @@ import type { NonEmptyArray } from '@shopify/polaris/build/ts/src/types';
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
 import type { WithDataSourceChildProps } from './hoc/withDataSource';
 
-export const VIEW_ACTIONS = {
-  CREATE: 'createView',
-  UPDATE: 'updateView',
-  DELETE: 'deleteView',
-  RENAME: 'renameView',
-  DUPLICATE: 'duplicateView',
-} as const;
+export enum VIEW_ACTIONS {
+  CREATE = 'createView',
+  UPDATE = 'updateView',
+  DELETE = 'deleteView',
+  RENAME = 'renameView',
+  DUPLICATE = 'duplicateView',
+}
 
 export type ListTableView = {
   _id?: string;
@@ -20,7 +20,7 @@ export type ListTableView = {
     queryValue?: string;
     [key: string]: any;
   };
-  allowActions?: (typeof VIEW_ACTIONS)[keyof typeof VIEW_ACTIONS][];
+  allowActions?: VIEW_ACTIONS[];
 };
 
 export type ListTableFilter = {

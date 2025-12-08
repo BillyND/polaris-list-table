@@ -1,93 +1,71 @@
-# Polaris List Table
+# @billynd/polaris-data-table-views
 
-[![npm version](https://img.shields.io/npm/v/polaris-list-table.svg)](https://www.npmjs.com/package/polaris-list-table)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/@billynd/polaris-data-table-views.svg)](https://www.npmjs.com/package/@billynd/polaris-data-table-views)
 
-A complete, production-ready data table component for Shopify Polaris with advanced filtering, sorting, pagination, and URL synchronization. Perfect for building admin interfaces with complex data management needs.
+[![npm downloads](https://img.shields.io/npm/dm/@billynd/polaris-data-table-views.svg)](https://www.npmjs.com/package/@billynd/polaris-data-table-views)
+
+[![license](https://img.shields.io/npm/l/@billynd/polaris-data-table-views.svg)](https://github.com/BillyND/polaris-list-table/blob/main/LICENSE)
+
+A complete data table component library for Shopify Polaris IndexTable with filtering, sorting, pagination, URL synchronization, and view management. Integrates seamlessly with `@billy/mongoose-url-query` for server-side data fetching.
 
 ## Table of Contents
 
-- [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Client-Side vs Server-Side](#client-side-vs-server-side)
+- [Core Concepts](#core-concepts)
+- [Usage Patterns](#usage-patterns)
+  - [Basic Usage with Remote Data](#basic-usage-with-remote-data)
+  - [Local Data Mode](#local-data-mode)
+  - [Custom Fetch Function](#custom-fetch-function)
+  - [View Management](#view-management)
+  - [Custom Filters](#custom-filters)
+  - [Using Hooks Directly](#using-hooks-directly)
+  - [Server-Side Setup](#server-side-setup)
 - [API Reference](#api-reference)
-- [Custom Model](#custom-model)
+  - [ListTable Component](#listtable-component)
+  - [useDataSource Hook](#usedatasource-hook)
+  - [Server Utilities](#server-utilities)
 - [Advanced Usage](#advanced-usage)
-- [TypeScript Support](#typescript-support)
-- [Backend Integration](#backend-integration)
-- [Troubleshooting](#troubleshooting)
-
-## Features
-
-- ✅ **Full-featured Data Table** - Built on Shopify Polaris `IndexTable` component
-- ✅ **Advanced Filtering** - Custom filters with query search, applied filters display
-- ✅ **Sorting** - Multi-column sorting support
-- ✅ **Pagination** - Built-in pagination with customizable page size
-- ✅ **URL Synchronization** - All filters, sorting, and pagination state synced with URL
-- ✅ **View Management** - Save, update, delete, and rename custom views
-- ✅ **Row Selection** - Single and bulk selection with actions
-- ✅ **Local & Remote Data** - Support for both local data arrays and remote API endpoints
-- ✅ **Mongoose Integration** - Seamless integration with `mongoose-url-query` for backend queries
-- ✅ **TypeScript** - Fully typed with comprehensive TypeScript definitions
-- ✅ **Customizable** - Highly configurable with hooks and HOC patterns
-- ✅ **Custom Models** - Create custom Mongoose models with additional fields
+  - [Custom View Models](#custom-view-models)
+  - [URL Synchronization](#url-synchronization)
+  - [Transform Response](#transform-response)
+  - [Error Handling](#error-handling)
 
 ## Installation
 
-### Basic Installation
-
 ```bash
-npm install polaris-list-table
+npm install @billynd/polaris-data-table-views
 # or
-yarn add polaris-list-table
-# or
-pnpm add polaris-list-table
+yarn add @billynd/polaris-data-table-views
 ```
 
 ### Peer Dependencies
 
-This library requires the following peer dependencies:
+This library requires:
 
-```bash
-# Required
-npm install @shopify/polaris react
-
-# Optional: Only needed for server-side view management
-npm install mongoose
-```
-
-**Version Requirements:**
-
-- `@shopify/polaris`: `^12.0.0 || ^13.0.0`
-- `react`: `^18.0.0`
-- `mongoose`: `^7.0.0 || ^8.0.0` (optional, server-side only)
+- `@shopify/polaris`: ^12.0.0 || ^13.0.0
+- `react`: ^18.0.0
+- `mongoose`: ^7.0.0 || ^8.0.0 (optional, only for server-side view management)
 
 ## Quick Start
 
-### Basic Example
+### 1. Basic Remote Data Table
 
 ```tsx
-import { ListTable } from 'polaris-list-table';
+import { ListTable } from '@billynd/polaris-data-table-views';
 import { IndexTable } from '@shopify/polaris';
 
-function UsersTable() {
-  const headings = [{ title: 'Name' }, { title: 'Email' }, { title: 'Status' }];
-
+function UsersPage() {
   return (
     <ListTable
       endpoint="/api/users"
-      queryKey="name"
-      headings={headings}
-      renderRowMarkup={(item, index, selectedResources) => (
-        <IndexTable.Row
-          id={item.id}
-          selected={selectedResources?.includes(item.id)}
-          position={index}
-        >
-          <IndexTable.Cell>{item.name}</IndexTable.Cell>
-          <IndexTable.Cell>{item.email}</IndexTable.Cell>
-          <IndexTable.Cell>{item.status}</IndexTable.Cell>
+      queryKey="email"
+      headings={[{ title: 'Name' }, { title: 'Email' }, { title: 'Status' }]}
+      renderRowMarkup={(user) => (
+        <IndexTable.Row id={user._id} key={user._id}>
+          <IndexTable.Cell>{user.name}</IndexTable.Cell>
+          <IndexTable.Cell>{user.email}</IndexTable.Cell>
+          <IndexTable.Cell>{user.status}</IndexTable.Cell>
         </IndexTable.Row>
       )}
     />
@@ -95,903 +73,781 @@ function UsersTable() {
 }
 ```
 
-### With Custom Filters
+### 2. With View Management (Server-Side)
+
+**Client-side:**
 
 ```tsx
-import { ListTable } from 'polaris-list-table';
-import { ChoiceList } from '@shopify/polaris';
+import { ListTable } from '@billynd/polaris-data-table-views';
 
-function UsersTable() {
-  const headings = [{ title: 'Name' }, { title: 'Email' }, { title: 'Status' }];
+function UsersPage() {
+  return (
+    <ListTable
+      endpoint="/api/users"
+      queryKey="email"
+      viewsEndpoint="/api/views"
+      headings={[...]}
+      renderRowMarkup={...}
+    />
+  );
+}
+```
 
-  const filters = [
+**Server-side (API route):**
+
+```tsx
+// pages/api/views.ts (Next.js) or routes/views.js (Express)
+import { ViewModel } from '@billynd/polaris-data-table-views/server';
+import {
+  serverGetViews,
+  serverCreateView,
+  serverUpdateView,
+  serverDeleteView,
+  serverRenameView,
+} from '@billynd/polaris-data-table-views/server';
+
+export default async function handler(req, res) {
+  const { path, action, name, oldName, newName } = req.query;
+  const ownerId = req.user?.id; // Optional: for user-specific views
+
+  switch (action) {
+    case 'createView':
+      await serverCreateView(path, name, req.body, ViewModel, ownerId);
+      return res.json({ success: true });
+
+    case 'updateView':
+      await serverUpdateView(path, name, req.body, ViewModel, ownerId);
+      return res.json({ success: true });
+
+    case 'deleteView':
+      await serverDeleteView(path, name, ViewModel, ownerId);
+      return res.json({ success: true });
+
+    case 'renameView':
+      await serverRenameView(path, oldName, newName, ViewModel, ownerId);
+      return res.json({ success: true });
+
+    default:
+      const views = await serverGetViews(path, ViewModel, ownerId);
+      return res.json({ items: views });
+  }
+}
+```
+
+## Core Concepts
+
+### 1. Data Source Modes
+
+The library supports two data source modes:
+
+- **Remote Data Mode**: Fetches data from an API endpoint (default)
+- **Local Data Mode**: Filters/sorts/paginates data in-memory
+
+### 2. View Management
+
+Views are saved filter configurations that users can create, update, delete, and rename. Views are stored in MongoDB and can be:
+
+- **Shared**: Available to all users (no `ownerId`)
+- **User-specific**: Only visible to the owner (`ownerId` provided)
+
+### 3. URL Synchronization
+
+By default, the table state (page, sort, filters, selected view) is synchronized with URL query parameters, allowing:
+
+- Bookmarkable URLs
+- Browser back/forward navigation
+- Shareable filtered views
+
+### 4. Filtering System
+
+- **Query Search**: Text search on a specified field (`queryKey`)
+- **Custom Filters**: Additional filters defined via `filters` prop
+- **Applied Filters**: Visual representation of active filters
+
+## Usage Patterns
+
+### Basic Usage with Remote Data
+
+```tsx
+import { ListTable } from '@billynd/polaris-data-table-views';
+
+<ListTable
+  endpoint="/api/products"
+  queryKey="name"
+  headings={[
+    { title: 'Product', id: 'name' },
+    { title: 'Price', id: 'price' },
+  ]}
+  sortOptions={[
+    { label: 'Name A-Z', value: 'name asc' },
+    { label: 'Name Z-A', value: 'name desc' },
+    { label: 'Price Low-High', value: 'price asc' },
+  ]}
+  defaultSort={{ field: 'createdAt', direction: 'desc' }}
+  renderRowMarkup={(product) => (
+    <IndexTable.Row id={product._id}>
+      <IndexTable.Cell>{product.name}</IndexTable.Cell>
+      <IndexTable.Cell>${product.price}</IndexTable.Cell>
+    </IndexTable.Row>
+  )}
+/>;
+```
+
+### Local Data Mode
+
+When you have data already loaded and want to filter/sort/paginate in-memory:
+
+```tsx
+const [products, setProducts] = useState([...]);
+
+<ListTable
+  queryKey="name"
+  localData={products}
+  onlyLocalData={true}
+  headings={[...]}
+  renderRowMarkup={...}
+/>
+```
+
+### Custom Fetch Function
+
+For authentication, custom headers, or API wrappers:
+
+```tsx
+const customFetch = async (url: string, options?: RequestInit) => {
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options?.headers,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+};
+
+<ListTable
+  endpoint="/api/products"
+  queryKey="name"
+  fetchFn={customFetch}
+  headings={[...]}
+  renderRowMarkup={...}
+/>
+```
+
+### View Management
+
+#### Client-Side Configuration
+
+```tsx
+<ListTable
+  endpoint="/api/products"
+  queryKey="name"
+  viewsEndpoint="/api/views"
+  defaultViews={[
+    {
+      name: 'Active Products',
+      filters: { status: 'active' },
+      allowActions: ['update', 'delete', 'rename'], // Optional: restrict actions
+    },
+  ]}
+  headings={[...]}
+  renderRowMarkup={...}
+/>
+```
+
+#### Server-Side API Route
+
+```tsx
+// Next.js API route example
+import { ViewModel } from '@billynd/polaris-data-table-views/server';
+import {
+  serverGetViews,
+  serverCreateView,
+  serverUpdateView,
+  serverDeleteView,
+  serverRenameView,
+} from '@billynd/polaris-data-table-views/server';
+
+export default async function handler(req, res) {
+  const { method, query, body } = req;
+  const { path, action, name, oldName, newName } = query;
+  const ownerId = req.user?.id; // Get from your auth system
+
+  try {
+    switch (action) {
+      case 'createView':
+        if (method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+        await serverCreateView(path, name, body, ViewModel, ownerId);
+        return res.json({ success: true });
+
+      case 'updateView':
+        if (method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
+        await serverUpdateView(path, name, body, ViewModel, ownerId);
+        return res.json({ success: true });
+
+      case 'deleteView':
+        if (method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+        await serverDeleteView(path, name, ViewModel, ownerId);
+        return res.json({ success: true });
+
+      case 'renameView':
+        if (method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+        await serverRenameView(path, oldName, newName, ViewModel, ownerId);
+        return res.json({ success: true });
+
+      default:
+        // GET views
+        if (method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+        const views = await serverGetViews(path, ViewModel, ownerId);
+        return res.json({ items: views });
+    }
+  } catch (error) {
+    console.error('View management error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+```
+
+### Custom Filters
+
+Add custom filter components (e.g., Select, DatePicker):
+
+```tsx
+import { Select } from '@shopify/polaris';
+
+<ListTable
+  endpoint="/api/products"
+  queryKey="name"
+  filters={[
     {
       key: 'status',
       label: 'Status',
       shortcut: true,
       filter: {
-        Component: ChoiceList,
+        Component: Select,
         props: {
-          title: 'Status',
-          choices: [
+          label: 'Status',
+          options: [
+            { label: 'All', value: '' },
             { label: 'Active', value: 'active' },
             { label: 'Inactive', value: 'inactive' },
           ],
         },
       },
     },
-  ];
+    {
+      key: 'category',
+      label: 'Category',
+      shortcut: false,
+      filter: {
+        Component: Select,
+        props: {
+          label: 'Category',
+          options: [
+            { label: 'All', value: '' },
+            { label: 'Electronics', value: 'electronics' },
+            { label: 'Clothing', value: 'clothing' },
+          ],
+        },
+      },
+    },
+  ]}
+  renderFilterLabel={(key, value) => {
+    if (key === 'status') {
+      return `Status: ${value}`;
+    }
+    if (key === 'category') {
+      return `Category: ${value}`;
+    }
+    return `${key}: ${value}`;
+  }}
+  headings={[...]}
+  renderRowMarkup={...}
+/>
+```
+
+### Using Hooks Directly
+
+For more control, use the hooks directly:
+
+```tsx
+import { useDataSource } from '@billynd/polaris-data-table-views';
+import { IndexTable, Card } from '@shopify/polaris';
+
+function CustomTable() {
+  const {
+    items,
+    total,
+    loading,
+    state,
+    setPage,
+    setQueryValue,
+    setFilter,
+    setSort,
+    pagination,
+  } = useDataSource({
+    endpoint: '/api/products',
+    queryKey: 'name',
+    defaultSort: { field: 'createdAt', direction: 'desc' },
+    defaultLimit: 25,
+  });
 
   return (
-    <ListTable
-      endpoint="/api/users"
-      queryKey="name"
-      headings={headings}
-      filters={filters}
-      renderRowMarkup={(item, index, selectedResources) => (
-        <IndexTable.Row
-          id={item.id}
-          selected={selectedResources?.includes(item.id)}
-          position={index}
-        >
-          <IndexTable.Cell>{item.name}</IndexTable.Cell>
-          <IndexTable.Cell>{item.email}</IndexTable.Cell>
-          <IndexTable.Cell>{item.status}</IndexTable.Cell>
-        </IndexTable.Row>
-      )}
-    />
+    <Card>
+      <input
+        type="text"
+        placeholder="Search..."
+        onChange={(e) => setQueryValue(e.target.value)}
+      />
+      <IndexTable
+        headings={[...]}
+        itemCount={items.length}
+        loading={loading}
+        pagination={{
+          hasNext: pagination.hasNext,
+          hasPrevious: pagination.hasPrevious,
+          onNext: pagination.onNext,
+          onPrevious: pagination.onPrevious,
+          label: pagination.label,
+        }}
+      >
+        {items.map((item) => (
+          <IndexTable.Row key={item._id}>
+            {/* Your row content */}
+          </IndexTable.Row>
+        ))}
+      </IndexTable>
+    </Card>
   );
 }
 ```
 
-### With Local Data
+### Server-Side Setup
+
+#### 1. Install and Connect Mongoose
 
 ```tsx
-import { ListTable } from 'polaris-list-table';
+// lib/mongodb.ts or similar
+import mongoose from 'mongoose';
 
-function LocalDataTable() {
-  const localData = [
-    { id: '1', name: 'John Doe', email: 'john@example.com' },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
-  ];
-
-  return (
-    <ListTable
-      onlyLocalData
-      localData={localData}
-      queryKey="name"
-      headings={[{ title: 'Name' }, { title: 'Email' }]}
-      renderRowMarkup={(item, index) => (
-        <IndexTable.Row id={item.id} position={index}>
-          <IndexTable.Cell>{item.name}</IndexTable.Cell>
-          <IndexTable.Cell>{item.email}</IndexTable.Cell>
-        </IndexTable.Row>
-      )}
-    />
-  );
+if (!mongoose.connection.readyState) {
+  await mongoose.connect(process.env.MONGODB_URI);
 }
 ```
 
-## Client-Side vs Server-Side
+#### 2. Create API Route for Views
 
-This library includes both **client-side** and **server-side** code. It's crucial to understand the distinction to avoid bundling issues.
+See [View Management](#view-management) section above.
 
-### Client-Side Exports (Main Entry)
+#### 3. Create API Route for Data
 
-**Import from:** `polaris-list-table`
-
-These can be safely used in React components, browser code, and client-side bundles:
+Your data endpoint should accept query parameters from `@billy/mongoose-url-query`:
 
 ```tsx
-// ✅ Safe for client-side
-import {
-  ListTable,
-  useDataSource,
-  useSelection,
-  usePagination,
-  VIEW_ACTIONS,
-} from 'polaris-list-table';
+// pages/api/products.ts
+import { buildQuery } from '@billy/mongoose-url-query';
+import Product from '@/models/Product';
 
-import type { ListTableProps, ListTableView, ListTableFilter } from 'polaris-list-table';
+export default async function handler(req, res) {
+  const { page, limit, sort, filters } = buildQuery(req.query);
+
+  const query = Product.find();
+
+  // Apply filters
+  if (filters) {
+    // @billy/mongoose-url-query filters are already parsed
+    Object.entries(filters).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        query.where(key).in(value);
+      } else {
+        query.where(key).equals(value);
+      }
+    });
+  }
+
+  // Apply sorting
+  if (sort) {
+    query.sort(sort);
+  }
+
+  // Apply pagination
+  const skip = (page - 1) * limit;
+  query.skip(skip).limit(limit);
+
+  const [items, total] = await Promise.all([
+    query.exec(),
+    Product.countDocuments(query.getQuery()),
+  ]);
+
+  res.json({ items, total, page, limit });
+}
 ```
-
-**Available Exports:**
-
-- `ListTable` - Main table component
-- `useDataSource` - Hook for data fetching and state management
-- `useSelection` - Hook for row selection
-- `usePagination` - Hook for pagination
-- `VIEW_ACTIONS` - Constants for view actions
-- All TypeScript types
-
-### Server-Side Exports (Subpath)
-
-**Import from:** `polaris-list-table/server` or specific subpaths
-
-⚠️ **IMPORTANT**: These utilities are **SERVER-SIDE ONLY** and should **NOT** be imported in client-side code:
-
-```typescript
-// ✅ Server-side only (API routes, Express handlers, Next.js API routes)
-import {
-  ViewModel,
-  createViewModel,
-  serverGetViews,
-  serverCreateView,
-  serverUpdateView,
-  serverDeleteView,
-  serverRenameView,
-} from 'polaris-list-table/server';
-
-// Or import from specific subpaths
-import { ViewModel } from 'polaris-list-table/models/View';
-import { createViewModel } from 'polaris-list-table/models/createViewModel';
-import { serverGetViews } from 'polaris-list-table/server/views';
-```
-
-**Available Subpath Exports:**
-
-| Subpath                                     | Exports                      | Use Case                   |
-| ------------------------------------------- | ---------------------------- | -------------------------- |
-| `polaris-list-table/server`                 | All server-side exports      | Full server-side utilities |
-| `polaris-list-table/models/View`            | `ViewModel`, `IView`         | Default Mongoose model     |
-| `polaris-list-table/models/createViewModel` | `createViewModel`, utilities | Custom model factory       |
-| `polaris-list-table/server/views`           | Server utility functions     | View CRUD operations       |
-
-**Where to use server-side code:**
-
-- ✅ Express.js API routes
-- ✅ Next.js API routes (`/pages/api/*` or `/app/api/*`)
-- ✅ Node.js backend services
-- ✅ Server-side middleware
-
-**Where NOT to use server-side code:**
-
-- ❌ React components
-- ❌ Client-side hooks
-- ❌ Browser bundles
-- ❌ Frontend JavaScript files
 
 ## API Reference
 
 ### ListTable Component
 
-The main component for rendering data tables.
-
 #### Props
 
-| Prop                  | Type                                                     | Default        | Required | Description                                                              |
-| --------------------- | -------------------------------------------------------- | -------------- | -------- | ------------------------------------------------------------------------ |
-| `endpoint`            | `string`                                                 | -              | No\*     | API endpoint for fetching data (\*required if not using `onlyLocalData`) |
-| `queryKey`            | `string`                                                 | -              | Yes      | Field name used for search queries                                       |
-| `headings`            | `NonEmptyArray<IndexTableHeading>`                       | -              | Yes      | Table column headings                                                    |
-| `renderRowMarkup`     | `(item, idx, selectedResources?, context?) => ReactNode` | -              | Yes      | Function to render table rows                                            |
-| `filters`             | `ListTableFilter[]`                                      | `[]`           | No       | Array of filter definitions                                              |
-| `views`               | `ListTableView[]`                                        | -              | No       | Pre-defined views                                                        |
-| `defaultViews`        | `ListTableView[]`                                        | `[]`           | No       | Default views to show                                                    |
-| `viewsEndpoint`       | `string`                                                 | -              | No       | API endpoint for view management                                         |
-| `limit`               | `number`                                                 | `50`           | No       | Items per page                                                           |
-| `condensed`           | `boolean`                                                | `false`        | No       | Use condensed table layout                                               |
-| `selectable`          | `boolean`                                                | `false`        | No       | Enable row selection                                                     |
-| `showBorder`          | `boolean`                                                | `true`         | No       | Show card border                                                         |
-| `showFilter`          | `boolean`                                                | `true`         | No       | Show filter bar                                                          |
-| `showPagination`      | `boolean`                                                | `true`         | No       | Show pagination controls                                                 |
-| `bulkActions`         | `BulkActionsProps['actions']`                            | -              | No       | Bulk action buttons                                                      |
-| `promotedBulkActions` | `BulkActionsProps['promotedActions']`                    | -              | No       | Promoted bulk actions                                                    |
-| `sortOptions`         | `IndexFiltersProps['sortOptions']`                       | -              | No       | Available sort options                                                   |
-| `resourceName`        | `{ singular: string; plural: string }`                   | -              | No       | Resource names for bulk actions                                          |
-| `emptyState`          | `ReactNode`                                              | -              | No       | Custom empty state component                                             |
-| `localData`           | `T[]`                                                    | -              | No       | Local data array (for local mode)                                        |
-| `onlyLocalData`       | `boolean`                                                | `false`        | No       | Use local data only                                                      |
-| `syncWithUrl`         | `boolean`                                                | `true`         | No       | Sync state with URL parameters                                           |
-| `fetchFunction`       | `(url, options?) => Promise<Response>`                   | `defaultFetch` | No       | Custom fetch function                                                    |
-| `fetchFn`             | `(url, options?) => Promise<Response>`                   | -              | No       | Alias for `fetchFunction`                                                |
-| `queryPlaceholder`    | `string`                                                 | -              | No       | Placeholder text for search input                                        |
-| `loadingComponent`    | `ReactNode`                                              | -              | No       | Custom loading component                                                 |
-| `onDataChange`        | `(data: ListTableData) => void`                          | -              | No       | Callback when data changes                                               |
-| `setListTableData`    | `Dispatch<SetStateAction<ListTableData>>`                | -              | No       | State setter for table data                                              |
-| `error`               | `Error`                                                  | -              | No       | Error object to display                                                  |
-| `renderFilterLabel`   | `(key: string, value: string \| any[]) => string`        | -              | No       | Custom filter label renderer                                             |
+| Prop                        | Type                                                   | Required | Default          | Description                                               |
+| --------------------------- | ------------------------------------------------------ | -------- | ---------------- | --------------------------------------------------------- |
+| `endpoint`                  | `string`                                               | No\*     | -                | API endpoint for data fetching (required for remote mode) |
+| `queryKey`                  | `string`                                               | Yes      | -                | Field name for text search                                |
+| `headings`                  | `IndexTableHeading[]`                                  | Yes      | -                | Table column headers                                      |
+| `renderRowMarkup`           | `(item, idx, selectedResources, context) => ReactNode` | Yes      | -                | Function to render each row                               |
+| `localData`                 | `T[]`                                                  | No       | -                | Array of data for local mode                              |
+| `onlyLocalData`             | `boolean`                                              | No       | `false`          | Enable local data mode                                    |
+| `viewsEndpoint`             | `string`                                               | No       | -                | API endpoint for view management                          |
+| `defaultViews`              | `ListTableView[]`                                      | No       | `[]`             | Default views to show                                     |
+| `views`                     | `ListTableView[]`                                      | No       | -                | Controlled views (overrides fetching)                     |
+| `filters`                   | `ListTableFilter[]`                                    | No       | `[]`             | Custom filter definitions                                 |
+| `sortOptions`               | `IndexFiltersProps['sortOptions']`                     | No       | -                | Sort dropdown options                                     |
+| `defaultSort`               | `{ field: string; direction: 'asc' \| 'desc' }`        | No       | -                | Default sort configuration                                |
+| `limit`                     | `number`                                               | No       | `50`             | Items per page                                            |
+| `selectable`                | `boolean`                                              | No       | `false`          | Enable row selection                                      |
+| `bulkActions`               | `BulkActionsProps['actions']`                          | No       | -                | Bulk action buttons                                       |
+| `promotedBulkActions`       | `BulkActionsProps['promotedActions']`                  | No       | -                | Promoted bulk actions                                     |
+| `condensed`                 | `boolean`                                              | No       | `false`          | Use condensed table layout                                |
+| `showBorder`                | `boolean`                                              | No       | `true`           | Show card border                                          |
+| `showFilter`                | `boolean`                                              | No       | `true`           | Show filter UI                                            |
+| `showPagination`            | `boolean`                                              | No       | `true`           | Show pagination controls                                  |
+| `emptyState`                | `ReactNode`                                            | No       | -                | Custom empty state component                              |
+| `fetchFn` / `fetchFunction` | `(url, options?) => Promise<Response>`                 | No       | `defaultFetch`   | Custom fetch function                                     |
+| `syncWithUrl`               | `boolean`                                              | No       | `true`           | Sync state with URL params                                |
+| `queryPlaceholder`          | `string`                                               | No       | `'Filter items'` | Search input placeholder                                  |
+| `renderFilterLabel`         | `(key, value) => string`                               | No       | -                | Custom filter label renderer                              |
+| `resourceName`              | `{ singular: string; plural: string }`                 | No       | -                | Resource names for bulk actions                           |
+| `t`                         | `(key, options?) => string`                            | No       | `defaultT`       | Translation function                                      |
+| `onDataChange`              | `(data: ListTableData) => void`                        | No       | -                | Callback when data changes                                |
+| `setListTableData`          | `Dispatch<SetStateAction<ListTableData>>`              | No       | -                | State setter for data                                     |
+| `error`                     | `Error`                                                | No       | -                | Error to display                                          |
+| `loadingComponent`          | `ReactNode`                                            | No       | -                | Custom loading component                                  |
+| `abbreviated`               | `string`                                               | No       | -                | Abbreviated response format                               |
 
-### Hooks
-
-#### useDataSource
-
-Hook for managing data fetching, filtering, sorting, and pagination.
-
-```tsx
-import { useDataSource } from 'polaris-list-table';
-
-const {
-  // State
-  items,
-  total,
-  loading,
-  firstLoad,
-  error,
-  state,
-
-  // Actions
-  setPage,
-  setQueryValue,
-  setFilter,
-  setFilters,
-  clearFilters,
-  setSort,
-  setSelectedView,
-  setViewSelected,
-  refresh,
-
-  // Polaris helpers
-  tabs,
-  sortOptions,
-  sortSelected,
-  onSort,
-
-  // Pagination helpers
-  pagination,
-} = useDataSource({
-  endpoint: '/api/users',
-  queryKey: 'name',
-  defaultSort: { field: 'createdAt', direction: 'desc' },
-  defaultLimit: 50,
-  syncWithUrl: true,
-  fetchFn: customFetch,
-});
-```
-
-**Options:**
-
-- `endpoint` (string, required) - API endpoint URL
-- `queryKey` (string, required) - Field name for search queries
-- `defaultSort` (SortDefinition, optional) - Default sort configuration
-- `defaultLimit` (number, optional) - Default items per page
-- `defaultViews` (ViewDefinition[], optional) - Default views
-- `syncWithUrl` (boolean, optional) - Enable URL synchronization
-- `localData` (T[], optional) - Local data array
-- `transformResponse` (function, optional) - Transform API response
-- `fetchFn` (function, optional) - Custom fetch function
-- `debounceMs` (number, optional) - Debounce delay for search (default: 300ms)
-
-#### useSelection
-
-Hook for managing row selection in tables.
-
-```tsx
-import { useSelection } from 'polaris-list-table';
-
-const { selectedResources, allResourcesSelected, handleSelectionChange, clearSelection } =
-  useSelection(items);
-```
-
-#### usePagination
-
-Hook for managing pagination state and actions.
-
-```tsx
-import { usePagination } from 'polaris-list-table';
-
-const { page, totalPages, hasPrevious, hasNext, onPrevious, onNext, goToPage, label } =
-  usePagination({
-    page: 1,
-    limit: 50,
-    total: 100,
-    onPageChange: (page) => setPage(page),
-  });
-```
-
-## Custom Model
-
-You can create custom Mongoose models with additional fields using the `createViewModel` factory function.
-
-### Basic Custom Model
+#### ListTableView Type
 
 ```typescript
-import { createViewModel } from 'polaris-list-table/server';
+type ListTableView = {
+  _id?: string;
+  name: string;
+  filters: {
+    queryValue?: string;
+    [key: string]: any;
+  };
+  allowActions?: VIEW_ACTIONS[]; // ['createView', 'updateView', 'deleteView', 'renameView', 'duplicateView']
+};
+```
+
+#### ListTableFilter Type
+
+```typescript
+type ListTableFilter = {
+  key: string;
+  label: string;
+  shortcut: boolean; // Show in shortcut bar
+  filter:
+    | {
+        Component: React.ComponentType<any>;
+        props: any;
+      }
+    | ReactNode;
+};
+```
+
+### useDataSource Hook
+
+#### Options
+
+```typescript
+interface UseDataSourceOptions<T> {
+  endpoint: string;
+  queryKey: string;
+  defaultSort?: { field: string; direction: 'asc' | 'desc' };
+  defaultLimit?: number;
+  defaultViews?: ViewDefinition[];
+  syncWithUrl?: boolean;
+  localData?: T[];
+  abbreviated?: boolean;
+  transformResponse?: (response: unknown) => QueryResult<T>;
+  fetchFn?: (url: string, options?: RequestInit) => Promise<unknown>;
+  debounceMs?: number;
+}
+```
+
+#### Return Value
+
+```typescript
+interface UseDataSourceReturn<T> {
+  // State
+  state: QueryState;
+  items: T[];
+  total: number;
+  loading: boolean;
+  firstLoad: boolean;
+  error: Error | null;
+
+  // Actions
+  setPage: (page: number) => void;
+  setQueryValue: (value: string) => void;
+  setFilter: (key: string, value: any) => void;
+  setFilters: (filters: Record<string, any>) => void;
+  clearFilters: () => void;
+  setSort: (sort: SortDefinition | null) => void;
+  setSelectedView: (index: number) => void;
+  setViewSelected: (viewNameOrId: string | null) => void;
+  refresh: () => void;
+
+  // Polaris helpers
+  tabs: IndexFiltersProps['tabs'];
+  sortOptions: IndexFiltersProps['sortOptions'];
+  sortSelected: string[];
+  onSort: (selected: string[]) => void;
+
+  // Pagination helpers
+  pagination: {
+    page: number;
+    totalPages: number;
+    hasPrevious: boolean;
+    hasNext: boolean;
+    onPrevious: () => void;
+    onNext: () => void;
+    goToPage: (page: number) => void;
+    label: string;
+  };
+}
+```
+
+### Server Utilities
+
+#### serverGetViews
+
+```typescript
+function serverGetViews(
+  path: string,
+  ViewModel: Model<IView>,
+  ownerId?: string,
+  select?: (keyof IView)[]
+): Promise<IView[]>;
+```
+
+#### serverCreateView
+
+```typescript
+function serverCreateView(
+  path: string,
+  name: string,
+  filters: Record<string, any>,
+  ViewModel: Model<IView>,
+  ownerId?: string
+): Promise<void>;
+```
+
+#### serverUpdateView
+
+```typescript
+function serverUpdateView(
+  path: string,
+  name: string,
+  filters: Record<string, any>,
+  ViewModel: Model<IView>,
+  ownerId?: string
+): Promise<void>;
+```
+
+#### serverDeleteView
+
+```typescript
+function serverDeleteView(
+  path: string,
+  name: string,
+  ViewModel: Model<IView>,
+  ownerId?: string
+): Promise<void>;
+```
+
+#### serverRenameView
+
+```typescript
+function serverRenameView(
+  path: string,
+  oldName: string,
+  newName: string,
+  ViewModel: Model<IView>,
+  ownerId?: string
+): Promise<void>;
+```
+
+## Advanced Usage
+
+### Custom View Models
+
+Create a custom Mongoose model with additional fields:
+
+```tsx
+import { createViewModel } from '@billynd/polaris-data-table-views/server';
 import { Schema } from 'mongoose';
 
-// Create custom model with additional fields
 const CustomViewModel = createViewModel({
   modelName: 'CustomView',
   collectionName: 'custom_views',
   schemaOptions: {
     description: { type: String },
-    category: { type: String, index: true },
     isPublic: { type: Boolean, default: false },
-  },
-});
-```
-
-### Advanced Custom Model
-
-```typescript
-import { createViewModel } from 'polaris-list-table/server';
-import { Schema } from 'mongoose';
-
-const ExtendedViewModel = createViewModel({
-  modelName: 'ExtendedView',
-  collectionName: 'extended_views',
-
-  // Add multiple custom fields - no limit!
-  schemaOptions: {
-    // String fields
-    description: { type: String },
-    category: { type: String, index: true },
-    status: { type: String, default: 'active' },
-
-    // Number fields
-    priority: { type: Number, default: 0 },
-    viewCount: { type: Number, default: 0 },
-    rating: { type: Number, min: 0, max: 5 },
-
-    // Boolean fields
-    isPublic: { type: Boolean, default: false },
-    isFavorite: { type: Boolean, default: false },
-    isArchived: { type: Boolean, default: false },
-
-    // Array fields
     tags: [{ type: String }],
-    permissions: [{ type: String }],
-    relatedIds: [{ type: Schema.Types.ObjectId }],
-
-    // Object/Mixed fields
-    metadata: { type: Schema.Types.Mixed, default: {} },
-    settings: { type: Schema.Types.Mixed },
-    config: { type: Schema.Types.Mixed },
-
-    // Reference fields
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', index: true },
-    teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
-    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization' },
-
-    // Date fields
-    lastAccessed: { type: Date },
-    expiresAt: { type: Date, index: true },
-    publishedAt: { type: Date },
-
-    // Nested objects
-    location: {
-      country: { type: String },
-      city: { type: String },
-      coordinates: {
-        lat: { type: Number },
-        lng: { type: Number },
-      },
-    },
-  },
-
-  // Add custom indexes
-  additionalIndexes: [
-    { fields: { category: 1, isPublic: 1 } },
-    { fields: { tags: 1 } },
-    { fields: { createdBy: 1, priority: -1 } },
-    { fields: { expiresAt: 1 }, options: { expireAfterSeconds: 0 } }, // TTL index
-  ],
-
-  // Custom schema options
-  mongooseSchemaOptions: {
-    timestamps: true,
-    // ... other Mongoose schema options
-  },
-});
-
-// Use the custom model
-const views = await ExtendedViewModel.find({ path: '/admin/users' });
-```
-
-### Using Base Schema Utilities
-
-```typescript
-import {
-  createViewModel,
-  baseViewSchemaDefinition,
-  createBaseViewIndexes,
-} from 'polaris-list-table/server';
-import { Schema } from 'mongoose';
-
-// Extend base schema manually
-const customSchema = new Schema(
-  {
-    ...baseViewSchemaDefinition,
-    customField: { type: String },
     metadata: { type: Schema.Types.Mixed },
   },
-  { timestamps: true }
-);
-
-// Add base indexes
-createBaseViewIndexes(customSchema);
-
-// Create model
-const CustomViewModel = model('CustomView', customSchema);
-```
-
-## Advanced Usage
-
-### Custom Fetch Function
-
-```tsx
-const customFetch = async (url: string, options?: RequestInit) => {
-  const token = getAuthToken();
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...options?.headers,
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
-
-<ListTable
-  endpoint="/api/users"
-  queryKey="name"
-  fetchFn={customFetch}
-  // ...
-/>;
-```
-
-### Transform Response
-
-```tsx
-const { items, total } = useDataSource({
-  endpoint: '/api/users',
-  queryKey: 'name',
-  transformResponse: (response: any) => ({
-    items: response.data,
-    total: response.meta.total,
-  }),
+  additionalIndexes: [{ fields: { isPublic: 1 } }, { fields: { tags: 1 } }],
 });
+
+// Use in your API routes
+const views = await serverGetViews('/admin/products', CustomViewModel, userId);
 ```
 
-### Custom Filter Labels
+### URL Synchronization
 
-```tsx
-<ListTable
-  renderFilterLabel={(key, value) => {
-    if (key === 'status') {
-      return `Status: ${value.join(', ')}`;
-    }
-    return `${key}: ${value}`;
-  }}
-  // ...
-/>
-```
+The library automatically syncs state with URL parameters:
 
-### Disable URL Synchronization
+- `?page=2` - Current page
+- `?sort=name|asc` - Sort field and direction
+- `?query=search+term` - Search query
+- `?filter_status=active` - Custom filter values
+- `?viewSelected=My+View` - Selected view name/ID
+
+To disable URL sync:
 
 ```tsx
 <ListTable
   syncWithUrl={false}
-  // ...
+  // ... other props
 />
 ```
 
-### With View Management
+### Transform Response
+
+Transform API responses to match expected format:
 
 ```tsx
 <ListTable
-  endpoint="/api/users"
+  endpoint="/api/products"
   queryKey="name"
-  viewsEndpoint="/api/views"
-  headings={headings}
-  renderRowMarkup={renderRowMarkup}
+  transformResponse={(response) => {
+    // Transform from { data: [...], count: 100 } to { items: [...], total: 100 }
+    return {
+      items: response.data || [],
+      total: response.count || 0,
+    };
+  }}
+  headings={[...]}
+  renderRowMarkup={...}
 />
+```
+
+### Error Handling
+
+Display custom error messages:
+
+```tsx
+const [error, setError] = useState<Error | null>(null);
+
+<ListTable
+  endpoint="/api/products"
+  queryKey="name"
+  error={error}
+  headings={[...]}
+  renderRowMarkup={...}
+/>
+```
+
+Or handle errors in custom fetch:
+
+```tsx
+const customFetch = async (url: string, options?: RequestInit) => {
+  try {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.statusText}`);
+    }
+    return response;
+  } catch (error) {
+    console.error('Fetch error:', error);
+    throw error;
+  }
+};
+```
+
+## Exports
+
+### Client-Side Exports
+
+```tsx
+// Main component
+import { ListTable } from '@billynd/polaris-data-table-views';
+
+// Hooks
+import { useDataSource, useSelection, usePagination } from '@billynd/polaris-data-table-views';
+
+// Types
+import type {
+  ListTableProps,
+  ListTableData,
+  ListTableView,
+  ListTableFilter,
+} from '@billynd/polaris-data-table-views/types';
+
+// Constants
+import { VIEW_ACTIONS } from '@billynd/polaris-data-table-views/types';
+import { TABLE_ITEM_LIST_LIMITATION } from '@billynd/polaris-data-table-views/constants';
+
+// Utils
+import { defaultFetch, defaultT } from '@billynd/polaris-data-table-views';
+```
+
+### Server-Side Exports
+
+```tsx
+// Models
+import { ViewModel } from '@billynd/polaris-data-table-views/server';
+import {
+  createViewModel,
+  baseViewSchemaDefinition,
+  createBaseViewIndexes,
+} from '@billynd/polaris-data-table-views/server';
+
+// Server utilities
+import {
+  serverGetViews,
+  serverCreateView,
+  serverUpdateView,
+  serverDeleteView,
+  serverRenameView,
+} from '@billynd/polaris-data-table-views/server';
 ```
 
 ## TypeScript Support
 
-This library is fully typed with TypeScript. All exports include type definitions.
+Full TypeScript support is included. All types are exported and can be imported:
 
-### Type Definitions
-
-```typescript
-// Component props
-import type { ListTableProps } from 'polaris-list-table';
-
-// Data types
+```tsx
 import type {
-  ListTableView,
-  ListTableFilter,
-  ListTableData,
-  ListTableState,
-} from 'polaris-list-table';
-
-// Hook types
-import type {
+  ListTableProps,
   UseDataSourceOptions,
   UseDataSourceReturn,
-  UseSelectionReturn,
-  UsePaginationReturn,
-} from 'polaris-list-table';
-
-// Server-side types
-import type { IView, CreateViewModelOptions } from 'polaris-list-table/server';
+  QueryState,
+  SortDefinition,
+  ViewDefinition,
+} from '@billynd/polaris-data-table-views';
 ```
 
-### Generic Types
-
-```tsx
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  status: 'active' | 'inactive';
-}
-
-function UsersTable() {
-  return (
-    <ListTable<User>
-      endpoint="/api/users"
-      queryKey="name"
-      headings={headings}
-      renderRowMarkup={(item: User, index) => (
-        // item is typed as User
-      )}
-    />
-  );
-}
-```
-
-## Backend Integration
-
-### API Response Format
-
-Your backend API should return data in the following format:
-
-```json
-{
-  "items": [...],
-  "total": 100
-}
-```
-
-### Query Parameters
-
-This library uses `mongoose-url-query` format for query parameters:
-
-- **Pagination**: `?page=1&limit=50`
-- **Sorting**: `?sort=name|asc` or `?sort=createdAt|desc`
-- **Filters**: `?filter_status=active&filter_category=electronics`
-- **Query Search**: `?query=search+term`
-
-### Example Backend Route (Express)
-
-```typescript
-import express from 'express';
-import { buildQuery } from 'mongoose-url-query';
-import { User } from './models/User';
-
-const app = express();
-
-app.get('/api/users', async (req, res) => {
-  const { page, limit, sort, filters, query } = req.query;
-
-  // Build query using mongoose-url-query
-  const mongooseQuery = buildQuery(User.find(), {
-    page: Number(page) || 1,
-    limit: Number(limit) || 50,
-    sort: sort as string,
-    filters: filters as Record<string, any>,
-    query: query as string,
-    queryKey: 'name', // Field to search
-  });
-
-  const [items, total] = await Promise.all([
-    mongooseQuery.exec(),
-    User.countDocuments(mongooseQuery.getQuery()),
-  ]);
-
-  res.json({ items, total });
-});
-```
-
-### View Management API
-
-The library expects a views endpoint that handles the following actions:
-
-#### GET /api/views
-
-Get all views for a path.
-
-**Query Parameters:**
-
-- `path` (required) - The path to get views for
-- `action` (optional) - Action to perform (`deleteView`, `renameView`)
-
-**Response:**
-
-```json
-{
-  "items": [
-    {
-      "name": "My View",
-      "filters": {
-        "queryValue": "search",
-        "status": "active"
-      }
-    }
-  ]
-}
-```
-
-#### POST /api/views
-
-Create a new view.
-
-**Query Parameters:**
-
-- `path` (required)
-- `action=createView` (required)
-- `name` (required) - View name
-
-**Body:**
-
-```json
-{
-  "queryValue": "search",
-  "status": "active"
-}
-```
-
-#### PUT /api/views
-
-Update an existing view.
-
-**Query Parameters:**
-
-- `path` (required)
-- `action=updateView` (required)
-- `name` (required) - View name
-
-**Body:**
-
-```json
-{
-  "queryValue": "new search",
-  "status": "inactive"
-}
-```
-
-### Example Backend Implementation
-
-```typescript
-// ✅ Server-side only - import in your API routes
-import {
-  ViewModel,
-  VIEW_ACTIONS,
-  serverGetViews,
-  serverCreateView,
-  serverUpdateView,
-  serverDeleteView,
-  serverRenameView,
-} from 'polaris-list-table/server';
-
-// GET /api/views
-app.get('/api/views', async (req, res) => {
-  const { path, action, name, oldName, newName } = req.query;
-  const ownerId = req.user?.id; // Get from auth middleware
-
-  if (action) {
-    switch (action) {
-      case VIEW_ACTIONS.DELETE:
-        await serverDeleteView(path as string, name as string, ViewModel, ownerId);
-        return res.json({ success: true });
-      case VIEW_ACTIONS.RENAME:
-        await serverRenameView(
-          path as string,
-          oldName as string,
-          newName as string,
-          ViewModel,
-          ownerId
-        );
-        return res.json({ success: true });
-    }
-  }
-
-  // Default: get all views
-  const views = await serverGetViews(path as string, ViewModel, ownerId);
-  res.json({ items: views });
-});
-
-// POST /api/views
-app.post('/api/views', async (req, res) => {
-  const { path, action, name } = req.query;
-  const ownerId = req.user?.id;
-
-  if (action === VIEW_ACTIONS.CREATE) {
-    await serverCreateView(path as string, name as string, req.body, ViewModel, ownerId);
-    return res.json({ success: true });
-  }
-
-  res.status(400).json({ error: 'Invalid action' });
-});
-
-// PUT /api/views
-app.put('/api/views', async (req, res) => {
-  const { path, action, name } = req.query;
-  const ownerId = req.user?.id;
-
-  if (action === VIEW_ACTIONS.UPDATE) {
-    await serverUpdateView(path as string, name as string, req.body, ViewModel, ownerId);
-    return res.json({ success: true });
-  }
-
-  res.status(400).json({ error: 'Invalid action' });
-});
-```
-
-### Next.js API Route Example
-
-```typescript
-// pages/api/views.ts or app/api/views/route.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import {
-  ViewModel,
-  VIEW_ACTIONS,
-  serverGetViews,
-  serverCreateView,
-  serverUpdateView,
-  serverDeleteView,
-  serverRenameView,
-} from 'polaris-list-table/server';
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { path, action, name, oldName, newName } = req.query;
-  const ownerId = req.session?.user?.id; // Get from session
-
-  try {
-    if (req.method === 'GET') {
-      if (action === VIEW_ACTIONS.DELETE) {
-        await serverDeleteView(path as string, name as string, ViewModel, ownerId);
-        return res.json({ success: true });
-      }
-      if (action === VIEW_ACTIONS.RENAME) {
-        await serverRenameView(
-          path as string,
-          oldName as string,
-          newName as string,
-          ViewModel,
-          ownerId
-        );
-        return res.json({ success: true });
-      }
-      const views = await serverGetViews(path as string, ViewModel, ownerId);
-      return res.json({ items: views });
-    }
-
-    if (req.method === 'POST' && action === VIEW_ACTIONS.CREATE) {
-      await serverCreateView(path as string, name as string, req.body, ViewModel, ownerId);
-      return res.json({ success: true });
-    }
-
-    if (req.method === 'PUT' && action === VIEW_ACTIONS.UPDATE) {
-      await serverUpdateView(path as string, name as string, req.body, ViewModel, ownerId);
-      return res.json({ success: true });
-    }
-
-    res.status(400).json({ error: 'Invalid request' });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-}
-```
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Mongoose Error in Client-Side Code
-
-**Error:** `The requested module 'mongoose' does not provide an export named 'models'`
-
-**Solution:** Make sure you're importing server-side code only in server-side files. Use subpath exports:
-
-```typescript
-// ❌ Wrong - in client-side code
-import { ViewModel } from 'polaris-list-table';
-
-// ✅ Correct - in server-side code
-import { ViewModel } from 'polaris-list-table/server';
-```
-
-#### 2. Bundle Size Issues
-
-**Problem:** Client bundle includes mongoose code
-
-**Solution:** The library now separates client and server code. Make sure you're using the correct imports:
-
-```typescript
-// ✅ Client-side (no mongoose)
-import { ListTable } from 'polaris-list-table';
-
-// ✅ Server-side (with mongoose)
-import { ViewModel } from 'polaris-list-table/server';
-```
-
-#### 3. TypeScript Errors
-
-**Problem:** Type errors when using custom types
-
-**Solution:** Use generic types:
-
-```tsx
-<ListTable<YourType>
-// ...
-/>
-```
-
-#### 4. View Management Not Working
-
-**Problem:** Views endpoint not responding correctly
-
-**Solution:**
-
-- Check that your API endpoint matches the expected format
-- Ensure `viewsEndpoint` prop is set correctly
-- Verify server-side utilities are imported correctly
-- Check that MongoDB connection is established
-
-#### 5. URL Synchronization Issues
-
-**Problem:** URL parameters not updating
-
-**Solution:**
-
-- Ensure `syncWithUrl={true}` (default)
-- Check browser URL encoding
-- Verify router compatibility (works with Next.js, React Router, etc.)
-
-## Performance Considerations
-
-- **Debouncing**: Search queries are debounced (default: 300ms) to reduce API calls
-- **Request Cancellation**: Previous requests are automatically cancelled when new ones are made
-- **Memoization**: Hooks use React memoization to prevent unnecessary re-renders
-- **Optimized Queries**: Server utilities use optimized Mongoose queries with proper indexing
-- **Tree Shaking**: Library supports tree shaking - only import what you need
-
-## Browser Support
-
-This library supports all modern browsers that support:
-
-- ES6+ features
-- Fetch API
-- URLSearchParams API
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Best Practices
+
+1. **Always provide `queryKey`**: Required for text search functionality
+2. **Use `viewsEndpoint` for persistent views**: Enables save/load functionality
+3. **Implement proper error handling**: Use `error` prop or custom `fetchFn`
+4. **Optimize with `abbreviated`**: For large datasets, request only needed fields
+5. **Use `onlyLocalData` for small datasets**: Avoids unnecessary API calls
+6. **Customize `renderFilterLabel`**: Provides better UX for applied filters
+7. **Set `defaultSort`**: Improves initial load performance
+8. **Use `syncWithUrl={false}`**: Only if you don't need bookmarkable URLs
 
 ## License
 
-MIT © [Your Name]
-
-## Changelog
-
-### 1.2.0
-
-- ✨ Added `createViewModel` factory function for custom models
-- ✨ Added subpath exports for better client/server separation
-- 🐛 Fixed mongoose import issues in client-side bundles
-- 📚 Improved documentation and examples
-- 🔧 Better TypeScript support
-
-### 1.1.5
-
-- 🐛 Fixed mongoose models access in ESM environments
-- 🔧 Improved error handling
-
-### 1.1.4
-
-- 🐛 Fixed mongoose import error in browser environments
-- 🔧 Better handling of mongoose.default in ESM
-
-### 1.1.3
-
-- 🐛 Fixed mongoose.models import issue
-
-### 1.1.1
-
-- Initial release
-- Full TypeScript support
-- View management
-- URL synchronization
-- Local and remote data support
+MIT

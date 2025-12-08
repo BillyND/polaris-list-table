@@ -1,7 +1,7 @@
 import type { ComponentClass, FunctionComponent } from 'react';
 import { useEffect, useCallback } from 'react';
 import { useSetIndexFiltersMode } from '@shopify/polaris';
-import { TABLE_ITEM_LIST_LIMITATION } from '../constants';
+import { TABLE_ITEM_LIST_LIMITATION } from '../index.constants';
 import { defaultFetch } from '../utils/defaultFetch';
 import { useDataSource } from '../hooks/useDataSource';
 import { useSelection } from '../hooks/useSelection';

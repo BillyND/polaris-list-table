@@ -11,8 +11,8 @@
  * Example:
  * ```typescript
  * // ✅ Server-side (API route, Express handler, etc.)
- * import { serverGetViews, serverCreateView } from 'polaris-list-table/server/views';
- * import { ViewModel } from 'polaris-list-table/models/View';
+ * import { serverGetViews, serverCreateView } from '@billynd/polaris-data-table-views/server/views';
+ * import { ViewModel } from '@billynd/polaris-data-table-views/models/View';
  *
  * app.get('/api/views', async (req, res) => {
  *   const views = await serverGetViews('/admin/users', ViewModel, req.user.id);
@@ -44,23 +44,26 @@ import type { IView } from '../models/View';
 export async function serverGetViews(
   path: string,
   ViewModel: Model<IView>,
-  ownerId?: string
-): Promise<Array<{ name: string; filters: Record<string, any> }>> {
-  // Optimized query: use $in with null for shared views instead of $or with $exists
+  ownerId?: string,
+  select: (keyof IView)[] = ['_id', 'path', 'name', 'filters', 'ownerId', 'createdAt', 'updatedAt']
+): Promise<IView[]> {
+  // Compose query: filter by path and, if provided, ownerId/shared
   const query: any = { path };
+
   if (ownerId) {
-    // Return views owned by this user OR shared views (null ownerId)
     query.ownerId = { $in: [ownerId, null] };
   }
-  // If no ownerId provided, return all views for the path (no filter on ownerId)
 
-  // Use select() with lean() for better performance - only fetch needed fields
-  const views = await ViewModel.find(query).select('name filters').lean();
+  // Use 'any' for better type compatibility with .lean() output
+  let viewsQuery: any = ViewModel.find(query).lean();
 
-  return views.map((view) => ({
-    name: view.name,
-    filters: view.filters || {},
-  }));
+  if (select && Array.isArray(select) && select.length) {
+    viewsQuery = viewsQuery.select(select.join(' '));
+  }
+
+  // Await and return the result as type IView[]
+  const views = await viewsQuery.exec();
+  return views;
 }
 
 /**

@@ -1,15 +1,15 @@
 {
-  "name": "polaris-list-table",
+  "name": "@billynd/polaris-data-table-views",
   "version": "1.2.3",
-  "description": "A complete data table component for Shopify Polaris with filtering, sorting, pagination and URL sync. Integrates with mongoose-url-query.",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "description": "A complete data table component for Shopify Polaris IndexTable with filtering, sorting, pagination, URL sync, and view management. Integrates with mongoose-url-query.",
+  "main": "dist/index.client.js",
+  "module": "dist/index.client.mjs",
+  "types": "dist/index.client.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "types": "./dist/index.client.d.ts",
+      "import": "./dist/index.client.mjs",
+      "require": "./dist/index.client.js"
     },
     "./server": {
       "types": "./dist/index.server.d.ts",
@@ -30,26 +30,39 @@
       "types": "./dist/server/views.d.ts",
       "import": "./dist/server/views.mjs",
       "require": "./dist/server/views.js"
+    },
+    "./types": {
+      "types": "./dist/index.types.d.ts",
+      "import": "./dist/index.types.mjs",
+      "require": "./dist/index.types.js"
+    },
+    "./constants": {
+      "types": "./dist/index.constants.d.ts",
+      "import": "./dist/index.constants.mjs",
+      "require": "./dist/index.constants.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/index.server.ts src/models/View.ts src/models/createViewModel.ts src/server/views.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/index.server.ts src/models/View.ts src/models/createViewModel.ts src/server/views.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.client.ts src/index.server.ts src/index.types.ts src/index.constants.ts src/models/View.ts src/models/createViewModel.ts src/server/views.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.client.ts src/index.server.ts src/index.types.ts src/index.constants.ts src/models/View.ts src/models/createViewModel.ts src/server/views.ts --format cjs,esm --dts --watch",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "yarn build"
   },
   "keywords": [
     "polaris",
     "shopify",
-    "list-table",
-    "data-table",
     "index-table",
+    "data-table",
+    "table",
     "filtering",
     "sorting",
     "pagination",
+    "view-management",
+    "views",
+    "url-sync",
     "mongoose-url-query",
     "react",
     "hooks"

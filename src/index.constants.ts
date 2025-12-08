@@ -1,2 +1,1 @@
 export const TABLE_ITEM_LIST_LIMITATION = 50;
-
